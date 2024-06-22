@@ -9,7 +9,7 @@ AlignConsecutiveDeclarations: false
 AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1
 SpaceBeforeCpp11BracedList: true
-SortIncludes: true
+SortIncludes: false
 AccessModifierOffset: -4
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 2
