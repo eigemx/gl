@@ -1,0 +1,45 @@
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 98
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+SpacesBeforeTrailingComments: 1
+SpaceBeforeCpp11BracedList: true
+SortIncludes: true
+AccessModifierOffset: -4
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+FixNamespaceComments: true
+ReflowComments: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel:  false
+  AfterClass:      false
+  AfterControlStatement: false
+  AfterEnum:       false
+  AfterFunction:   false
+  AfterNamespace:  false
+  AfterObjCDeclaration: false
+  AfterStruct:     false
+  AfterUnion:      false
+  BeforeCatch:     false
+  BeforeElse:      false
+  IndentBraces:    false
+DerivePointerAlignment: false
+PointerAlignment: Left
+AccessModifierOffset: -2
+
+# https://stackoverflow.com/q/29483626/2839539
+# Allow putting all parameters of a function declaration onto the next line even if BinPackParameters is false.
+AllowAllParametersOfDeclarationOnNextLine: false
+ExperimentalAutoDetectBinPacking: false
+
+# If false, a function call’s arguments will either be all on the same line or will have one line each.
+BinPackArguments: false
+# If false, a function call’s parameters will either be all
+# on the same line or will have one line each.
+BinPackParameters: false

@@ -1,0 +1,13 @@
+{
+    "name": "gl",
+    "version-string": "1.0.0",
+    "license": "MIT",
+    "dependencies": [
+        "fmt",
+        "gtest",
+        "opengl",
+        "glad",
+        "glfw3",
+        "imgui"
+    ]
+}
