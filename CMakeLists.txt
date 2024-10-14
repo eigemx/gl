@@ -11,5 +11,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(main src/main.cpp)
 target_link_libraries(main PRIVATE fmt::fmt-header-only glad::glad glfw imgui::imgui)  

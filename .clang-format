@@ -1,6 +1,6 @@
 BasedOnStyle: Google
 IndentWidth: 4
-ColumnLimit: 98
+ColumnLimit: 87
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
@@ -10,7 +10,6 @@ AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1
 SpaceBeforeCpp11BracedList: true
 SortIncludes: false
-AccessModifierOffset: -4
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 2
 FixNamespaceComments: true
