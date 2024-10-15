@@ -13,5 +13,5 @@ find_package(imgui CONFIG REQUIRED)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(main src/main.cpp)
+add_executable(main src/triangle.cpp)
 target_link_libraries(main PRIVATE fmt::fmt-header-only glad::glad glfw imgui::imgui)  
