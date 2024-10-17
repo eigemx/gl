@@ -130,9 +130,10 @@ auto main(void) -> int {
     // device coordinates (the visible region of OpenGL) in a float array.
     // clang-format off
     float vertices[] = {
-       -0.5f, -0.5f, 0.0f,  // Bottom left
-        0.5f, -0.5f, 0.0f,  // Bottom right
-        0.0f,  0.5f, 0.0f   // Top
+        // positions          // colors
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom left
+       -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom right
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top
     };
 
     unsigned int indices[] = {
@@ -205,8 +206,17 @@ auto main(void) -> int {
     // 6) The last parameter is of type void* and thus requires that weird cast. This
     // is the offset of where the position data begins in the buffer. Since the
     // position data is at the start of the data array this value is just 0.
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    int n_attributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &n_attributes);
+    spdlog::info("Maximum number of vertex attributes supported: {}", n_attributes);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(
+    // NOLINTNEXTLINE
+        1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // I am not sure why this is needed. Will be commented out for now.
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
