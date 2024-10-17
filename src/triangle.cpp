@@ -16,34 +16,19 @@
 // plenty enough for our purposes.
 #include <GLFW/glfw3.h>
 
-#include <array>
 #include <spdlog/spdlog.h>
+
+#include "triangle_shader.H"
 
 auto constexpr WINDOW_WIDTH = 800;
 auto constexpr WINDOW_HEIGHT = 600;
-
-const char* vertex_shader_src =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-
-const char* fragment_shader_src =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
 
 void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
 void escape_key_pressed_callback(GLFWwindow* window);
 
 auto main(void) -> int {
     // initialized GLFW
-    spdlog::info("Initializing GLFW...");
+    spdlog::info("Initializing GLFW");
     glfwInit();
 
     // We'd tell GLFW that 3.3 is the OpenGL version we want to use. This way GLFW can
@@ -66,7 +51,12 @@ auto main(void) -> int {
         return -1;
     }
 
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
 
     // we want to initialize GLAD before we call any OpenGL function
     if (!static_cast<bool>(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))) {
@@ -78,7 +68,6 @@ auto main(void) -> int {
     // of the window. The third and fourth parameter set the width and height of the
     // rendering window in pixels, which we set equal to GLFW's window size.
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
 
     // Prepare our vertex shader
     unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -88,7 +77,7 @@ auto main(void) -> int {
     // source code, which is only one. The third parameter is the actual source code of
     // the vertex shader and we can leave the 4th parameter to null.
     spdlog::info("Compiling vertex shader");
-    glShaderSource(vertex_shader, 1, &vertex_shader_src, nullptr);
+    glShaderSource(vertex_shader, 1, &shaders::vertex_shader_src, nullptr);
     glCompileShader(vertex_shader);
 
     // check if shader compilation was successful
@@ -98,7 +87,7 @@ auto main(void) -> int {
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
     if (!static_cast<bool>(success)) {
         glGetShaderInfoLog(vertex_shader, 512, nullptr, info_log);
-        spdlog::error("SHADER::VERTEX::COMPILATION_FAILED: {}", info_log);
+        spdlog::error("Vertex shader compilation failed: {}", info_log);
     }
 
     // The fragment shader is the second and final shader we're going to create for
@@ -109,13 +98,13 @@ auto main(void) -> int {
     // although this time we use the GL_FRAGMENT_SHADER constant as the shader type
     unsigned int fragment_shader;
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_src, NULL);
+    glShaderSource(fragment_shader, 1, &shaders::fragment_shader_src, NULL);
     glCompileShader(fragment_shader);
 
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if (!static_cast<bool>(success)) {
         glGetShaderInfoLog(fragment_shader, 512, nullptr, info_log);
-        spdlog::error("SHADER::FRAGMENT::COMPILATION_FAILED: {}", info_log);
+        spdlog::error("Fragment shader compilation failed: {}", info_log);
     }
     // Both the shaders are now compiled and the only thing left to do is link both
     // shader objects into a shader program that we can use for rendering.
@@ -130,7 +119,7 @@ auto main(void) -> int {
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     if (!static_cast<bool>(success)) {
         glGetProgramInfoLog(shader_program, 512, nullptr, info_log);
-        spdlog::error("SHADER::PROGRAM::COMPILATION_FAILED: {}", info_log);
+        spdlog::error("Shader program compilation failed: {}", info_log);
     }
 
     glDeleteShader(vertex_shader);
@@ -140,10 +129,14 @@ auto main(void) -> int {
     // vertices with each vertex having a 3D position. We define them in normalized
     // device coordinates (the visible region of OpenGL) in a float array.
     // clang-format off
-    std::array<float, 9> vertices{
-       -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+    float vertices[] = {
+       -0.5f, -0.5f, 0.0f,  // Bottom left
+        0.5f, -0.5f, 0.0f,  // Bottom right
+        0.0f,  0.5f, 0.0f   // Top
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2  // First triangle
     };
     // clang-format on
 
@@ -152,13 +145,13 @@ auto main(void) -> int {
     // the GPU where we store the vertex data, configure how OpenGL should interpret
     // the memory and specify how to send the data to the graphics card. The vertex
     // shader then processes as much vertices as we tell it to from its memory.
-    spdlog::info("Generating and binding GL_ARRAY_BUFFER");
-    unsigned int VAO;
-    unsigned int VBO;
+    unsigned int VAO; // Vertex array object
+    unsigned int VBO; // Vertex buffer object
+    unsigned int EBO; // Element buffer object
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     // From that point on any buffer calls we make (on the GL_ARRAY_BUFFER target) will
     // be used to configure the currently bound buffer, which is VBO. Then we can make
@@ -169,8 +162,17 @@ auto main(void) -> int {
     // times.
     // GL_STATIC_DRAW: the data is set only once and used many times.
     // GL_DYNAMIC_DRAW: the data is changed a lot and used many times.
-    spdlog::info("Copying triangle vertex data into buffer's memory");
-    glBufferData(GL_ARRAY_BUFFER, vertices.size(), vertices.data(), GL_STATIC_DRAW);
+    spdlog::info("Copying triangle vertex data to vertix buffer");
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Similar to the VBO we bind the EBO and copy the indices into the buffer with
+    // glBufferData. Also, just like the VBO we want to place those calls between a
+    // bind and an unbind call, although this time we specify GL_ELEMENT_ARRAY_BUFFER
+    // as the buffer type.
+    spdlog::info("Copying triangle element indices to element buffer");
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Right now we sent the input vertex data to the GPU and instructed the GPU how
     // it should process the vertex data within a vertex and fragment shader. We're
@@ -206,8 +208,9 @@ auto main(void) -> int {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    // I am not sure why this is needed. Will be commented out for now.
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glBindVertexArray(0);
 
     while (!static_cast<bool>(glfwWindowShouldClose(window))) {
         // If escape key is pressed, the windows should be closed.
@@ -219,14 +222,18 @@ auto main(void) -> int {
         // GL_STENCIL_BUFFER_BIT. the glClearColor function is a state-setting function
         // and glClear is a state-using function in that it uses the current state to
         // retrieve the clearing color from.
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.11f, 0.11f, 0.11f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
 
         // Every shader and rendering call after glUseProgram will now use this program
         // object (and thus the shaders).
         glUseProgram(shader_program);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(0);
 
         // The glfwSwapBuffers will swap the color buffer (a large 2D buffer that
         // contains color values for each pixel in GLFW's window) that is used to
@@ -242,6 +249,7 @@ auto main(void) -> int {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shader_program);
 
     glfwTerminate();
