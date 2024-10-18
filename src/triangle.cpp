@@ -16,6 +16,10 @@
 // plenty enough for our purposes.
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <spdlog/spdlog.h>
 
 #include "triangle_shader.H"
@@ -63,6 +67,20 @@ auto main(void) -> int {
         spdlog::error("Failed to initialize GLAD");
         return -1;
     }
+
+    // setup ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); // NOLINT
+    (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui::StyleColorsDark();
+
+    // Our state
+    bool show_tip_window = true;
+    auto clear_color = ImVec4(0.11f, 0.11f, 0.11f, 1.0f);
 
     // The first two parameters of glViewport set the location of the lower left corner
     // of the window. The third and fourth parameter set the width and height of the
@@ -213,9 +231,12 @@ auto main(void) -> int {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(
-    // NOLINTNEXTLINE
-        1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          6 * sizeof(float),
+                          (void*)(3 * sizeof(float))); // NOLINT
     glEnableVertexAttribArray(1);
 
     // I am not sure why this is needed. Will be commented out for now.
@@ -223,6 +244,17 @@ auto main(void) -> int {
     // glBindVertexArray(0);
 
     while (!static_cast<bool>(glfwWindowShouldClose(window))) {
+        // The glfwPollEvents function checks if any events are triggered (like
+        // keyboard input or mouse movement events), updates the window state, and
+        // calls the corresponding functions (which we can register via callback
+        // methods).
+        glfwPollEvents();
+
+        // start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         // If escape key is pressed, the windows should be closed.
         escape_key_pressed_callback(window);
 
@@ -232,9 +264,9 @@ auto main(void) -> int {
         // GL_STENCIL_BUFFER_BIT. the glClearColor function is a state-setting function
         // and glClear is a state-using function in that it uses the current state to
         // retrieve the clearing color from.
-        glClearColor(0.11f, 0.11f, 0.11f, 1.0f);
+        // glClearColor(0.11f, 0.11f, 0.11f, 1.0f);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
-
 
         // Every shader and rendering call after glUseProgram will now use this program
         // object (and thus the shaders).
@@ -244,17 +276,23 @@ auto main(void) -> int {
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
+        if (show_tip_window) {
+            ImGui::Begin("Tip");
+            ImGui::Text("Change backgroung color");
+            ImGui::ColorEdit3("Select color", (float*)&clear_color);
+            if (ImGui::Button("Close")) {
+                show_tip_window = false;
+            }
+            ImGui::End();
+        }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // The glfwSwapBuffers will swap the color buffer (a large 2D buffer that
         // contains color values for each pixel in GLFW's window) that is used to
         // render to during this render iteration and show it as output to the screen.
         glfwSwapBuffers(window);
-
-        // The glfwPollEvents function checks if any events are triggered (like
-        // keyboard input or mouse movement events), updates the window state, and
-        // calls the corresponding functions (which we can register via callback
-        // methods).
-        glfwPollEvents();
     }
 
     glDeleteVertexArrays(1, &VAO);
